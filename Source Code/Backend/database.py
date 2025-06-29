@@ -6,6 +6,7 @@ db_name = 'moowallet.db'
 def get_db_connection():
     pwd = os.path.dirname(os.path.abspath(__file__))
     conn = sqlite3.connect(os.path.join(pwd, db_name))
+    conn.row_factory = sqlite3.Row
     return conn
 
 def create_tables():

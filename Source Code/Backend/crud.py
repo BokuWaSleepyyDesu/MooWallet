@@ -11,11 +11,11 @@ def create_user(first_name, last_name, phone_no, email, password):
         user_id = c.lastrowid
 
         c.execute("""INSERT INTO accounts (type, user_no) VALUES ('user', ?)""",
-                  user_id)
+                  (user_id,))
         conn.commit()
         return {"status":"success", "account_id":c.lastrowid}
     except Exception as e:
-        return {"status":"failed", "account_id":c.lastrowid}
+        return {"status":"error", 'error':str(e)}
     finally:
         conn.close()
 
@@ -24,7 +24,7 @@ def create_organization(name, phone_no, email, password):
     c = conn.cursor()
 
     try:
-        c.execute("""INSERT INTO organizations (type, org_no) VALUES ('organization', ?)""",
+        c.execute("""INSERT INTO organizations (name, phone_no, email, password) VALUES (?, ?, ?, ?)""",
                   (name, phone_no, email, hash_password(password)))
         org_no = c.lastrowid
 
@@ -34,7 +34,7 @@ def create_organization(name, phone_no, email, password):
 
         return {'status':'success', 'account_id':c.lastrowid}
     except Exception as e:
-        return {'status':'failed', 'account_id':c.lastrowid}
+        return {'status':'error', 'error': str(e)}
     finally:
         conn.close()
 
