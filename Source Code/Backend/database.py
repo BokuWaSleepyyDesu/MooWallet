@@ -52,6 +52,12 @@ def create_tables():
             FOREIGN KEY (sender_id) REFERENCES accounts(account_id),
             FOREIGN KEY (receiver_id) REFERENCES accounts(account_id)
             );""")
+    
+    c.execute("""CREATE TABLE IF NOT EXISTS otps (
+              email TEXT NOT NULL,
+              otp TEXT NOT NULL,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+              );""")
 
     conn.commit()
     conn.close()
