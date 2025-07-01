@@ -30,6 +30,7 @@ def create_tables():
             email TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
             balance REAL DEFAULT 0.0,
+            mpin TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );""")
 
@@ -40,6 +41,7 @@ def create_tables():
               email TEXT UNIQUE NOT NULL,
               password TEXT NOT NULL,
               balance REAL DEFAULT 0.0,
+              mpin TEXT,
               created_at DATETIME DEFAULT CURRET_TIMESTAMP
               );""")
 
@@ -55,6 +57,7 @@ def create_tables():
     
     c.execute("""CREATE TABLE IF NOT EXISTS otps (
               email TEXT NOT NULL,
+              type TEXT NOT NULL CHECK(type in ('registration','transaction','recovery')),
               otp TEXT NOT NULL,
               created_at DATETIME DEFAULT CURRENT_TIMESTAMP
               );""")

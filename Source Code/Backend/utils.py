@@ -1,5 +1,10 @@
 import hashlib, random, smtplib
+from database import get_db_connection
+# from crud import get_account_by_email
 from email.mime.text import MIMEText
+from datetime import datetime, timedelta
+
+login = ['moowallett@gmail.com','rsum ruap pxqs rwoe']
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
@@ -13,13 +18,101 @@ def generate_otp():
 def send_otp_email(email, otp):
     msg = MIMEText(f"Your OTP Code is {otp}")
     msg['Subject'] = 'MooWallet Registration OTP'
-    msg['From'] = 'no-reply@moowallet.com'
+    msg['From'] = login[0]
     msg['To'] = email
 
     with smtplib.SMTP('smtp.gmail.com', 587) as server:
         server.starttls()
-        server.login('moowallett@gmail.com', 'rsum ruap pxqs rwoe')
+        server.login(login[0], login[1])
         server.sendmail(msg['From'], [msg['To']], msg.as_string())
+
+def verify_otp(sender, otp, type):
+    conn = get_db_connection()
+    c = conn.cursor()
+    if type == "registration":
+        c.execute("""SELECT otp, created_at FROM otps WHERE email = ? ORDER BY created_at DESC LIMIT 1""", (sender,))
+        otp_row = c.fetchone()
+
+        if not otp_row:
+            return{'status': '400', 'detail': 'OTP not found!'}
+        
+        db_otp, created_at = otp_row["otp"], otp_row["created_at"]
+
+        if db_otp != otp:
+            return{'status': '400', 'detail': 'Invalid OTP!'}
+        
+        if datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S") < datetime.utcnow() - timedelta(minutes=5):
+            return{'status': '400', 'detail': 'OTP expired!'}
+        
+        return{'status': 200, 'detail': 'OTP matches!'}
+    
+    elif type == "transaction":
+        return{'status': 200, 'detail': 'OTP matches!'}
+    
+    elif type == "recovery":
+        return{'status': 200, 'detail': 'OTP matches!'}
+
+    else:
+        return{}
+
+def verify_mpin(id, mpin):
+    pass
+
+def send_transaction_email(sender_id, receiver_id, amount):
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT type, user_no, org_no FROM accounts WHERE account_id = ?", (sender_id,))
+        sender_acc = c.fetchone()
+        if not sender_acc:
+            return {"status": "failed", "error": "Sender not found"}
+
+        if sender_acc["type"] == "user":
+            c.execute("SELECT first_name, phone_no, email FROM users WHERE user_no = ?", (sender_acc["user_no"],))
+        else:
+            c.execute("SELECT name, phone_no, email FROM organizations WHERE org_no = ?", (sender_acc["org_no"],))
+        sender_name, sender_phone_no, sender_email = c.fetchone()
+
+        c.execute("SELECT type, user_no, org_no FROM accounts WHERE account_id = ?", (receiver_id,))
+        receiver_acc = c.fetchone()
+        if not receiver_acc:
+            return {"status": "failed", "error": "Receiver not found"}
+
+        if receiver_acc["type"] == "user":
+            c.execute("SELECT first_name, phone_no, email FROM users WHERE user_no = ?", (receiver_acc["user_no"],))
+        else:
+            c.execute("SELECT name, phone_no, email FROM organizations WHERE org_no = ?", (receiver_acc["org_no"],))
+        receiver_name, receiver_phone_no, receiver_email = c.fetchone()
+
+        amount = float(amount)
+        
+        sender_msg = MIMEText(f"Dear {sender_name},\n\nYou have successfully transferred NPR {amount:.2f} to {receiver_phone_no} ({receiver_name}).")
+        sender_msg['Subject'] = 'MooWallet Fund Transfer Confirmation'
+        sender_msg['From'] = login[0]
+        sender_msg['To'] = sender_email
+
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login(login[0], login[1])
+            server.sendmail(sender_msg['From'], [sender_msg['To']], sender_msg.as_string())
+
+        receiver_msg = MIMEText(f"Dear {receiver_name},\n\nYou have received NPR {amount:.2f} from {sender_phone_no} ({sender_name}).", "plain", "utf-8")
+        receiver_msg['Subject'] = 'MooWallet Fund Received'
+        receiver_msg['From'] = login[0]
+        receiver_msg['To'] = receiver_email
+
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login(login[0], login[1])
+            server.sendmail(receiver_msg['From'], [receiver_msg['To']], receiver_msg.as_string())
+
+        return {"status": "success"}
+
+    except Exception as e:
+        return {"status": "failed", "error": str(e)}
+
+    finally:
+        conn.close()
 
 def generate_qr_code(data: str) -> str:
     return f"QR({data})"

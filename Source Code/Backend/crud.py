@@ -1,5 +1,5 @@
 from database import get_db_connection
-from utils import hash_password, verify_password
+from utils import hash_password, verify_password, send_transaction_email
 
 def create_user(first_name, last_name, phone_no, email, password):
     conn = get_db_connection()
@@ -125,6 +125,7 @@ def transfer(sender_id, receiver_id, amount):
                   (sender_id, receiver_id, amount))
         
         conn.commit()
+        send_transaction_email(sender_id, receiver_id, str(amount))
         return {"status":"success"}
     except Exception as e:
         return {"status":"failed", "error": str(e)}
