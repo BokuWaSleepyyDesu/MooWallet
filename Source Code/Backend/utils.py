@@ -2,7 +2,7 @@ import hashlib, random, smtplib
 from database import get_db_connection
 # from crud import get_account_by_email
 from email.mime.text import MIMEText
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 login = ['moowallett@gmail.com','rsum ruap pxqs rwoe']
 
@@ -15,9 +15,16 @@ def verify_password(raw_password: str, hashed: str) -> bool:
 def generate_otp():
     return str(random.randint(100000, 999999))
 
-def send_otp_email(email, otp):
+def send_otp_email(email, otp, type):
     msg = MIMEText(f"Your OTP Code is {otp}")
-    msg['Subject'] = 'MooWallet Registration OTP'
+    if type == "registration":
+        msg['Subject'] = 'MooWallet Registration OTP'
+    elif type == "setmpin":
+        msg['Subject'] = 'MooWallet MPIN Setup OTP'
+    elif type == "transaction":
+        msg['Subject'] = 'MooWallet Transaction OTP'
+    elif type == "recovery":
+        msg['Subject'] = 'MooWallet Password Recovery OTP'
     msg['From'] = login[0]
     msg['To'] = email
 
@@ -30,30 +37,42 @@ def verify_otp(sender, otp, type):
     conn = get_db_connection()
     c = conn.cursor()
     if type == "registration":
-        c.execute("""SELECT otp, created_at FROM otps WHERE email = ? ORDER BY created_at DESC LIMIT 1""", (sender,))
+        c.execute("""SELECT otp, created_at FROM otps WHERE email = ? AND type = 'registration' ORDER BY created_at DESC LIMIT 1""", (sender,))
+        otp_row = c.fetchone()
+    
+    elif type == "setmpin":
+        c.execute("""SELECT otp, created_at FROM otps WHERE email = ? AND type = 'setmpin' ORDER BY created_at DESC LIMIT 1""", (sender,))
         otp_row = c.fetchone()
 
-        if not otp_row:
-            return{'status': '400', 'detail': 'OTP not found!'}
-        
-        db_otp, created_at = otp_row["otp"], otp_row["created_at"]
-
-        if db_otp != otp:
-            return{'status': '400', 'detail': 'Invalid OTP!'}
-        
-        if datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S") < datetime.utcnow() - timedelta(minutes=5):
-            return{'status': '400', 'detail': 'OTP expired!'}
-        
-        return{'status': 200, 'detail': 'OTP matches!'}
-    
     elif type == "transaction":
-        return{'status': 200, 'detail': 'OTP matches!'}
+        c.execute("""SELECT otp, created_at FROM otps WHERE email = ? AND type = 'transaction' ORDER BY created_at DESC LIMIT 1""", (sender,))
+        otp_row = c.fetchone()
     
     elif type == "recovery":
-        return{'status': 200, 'detail': 'OTP matches!'}
+        c.execute("""SELECT otp, created_at FROM otps WHERE email = ? AND type = 'recovery' ORDER BY created_at DESC LIMIT 1""", (sender,))
+        otp_row = c.fetchone()
 
     else:
+        conn.close()
         return{}
+    
+    conn.close()
+
+    if not otp_row:
+        return{'status': 400, 'detail': 'OTP not found!'}
+    
+    db_otp, created_at = otp_row["otp"], otp_row["created_at"]
+
+    if db_otp != otp:
+        return{'status': 400, 'detail': 'Invalid OTP!'}
+    
+    created_time = datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S")
+    created_time = created_time.replace(tzinfo=timezone.utc)
+
+    if created_time < datetime.now(timezone.utc) - timedelta(minutes=5):
+        return {'status': 400, 'detail': 'OTP expired!'}
+    
+    return{'status': 200, 'detail': 'OTP matches!'}
 
 def verify_mpin(id, mpin):
     pass

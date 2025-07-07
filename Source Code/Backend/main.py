@@ -44,28 +44,42 @@ class SendMoneyRequest(BaseModel):
 class SetMPin(BaseModel):
     email: str
     mpin: str
+    otp: str
 
-class OTPRequest(BaseModel):
+class RegistrationOTPRequest(BaseModel):
     email: str
+
+class SetMPINOTPRequest(BaseModel):
+    email: str
+
+class TransactionOTPRequest(BaseModel):
+    email: str
+
+class PasswordRecoveryOTPRequest(BaseModel):
+    email: str
+
+class PasswordRecovery(BaseModel):
+    email: str
+    password: str
 
 # --------------- Routes -------------------
 
 @app.post("/request-registration-otp")
-def request_otp(req: OTPRequest):
+def request_registration_otp(req: RegistrationOTPRequest):
     otp = generate_otp()
     conn = get_db_connection()
     c = conn.cursor()
     c.execute("""INSERT INTO otps (type, email, otp) VALUES ('registration', ?, ?)""", (req.email, otp))
     conn.commit()
     conn.close()
-    send_otp_email(req.email, otp)
+    send_otp_email(req.email, otp, "registration")
     return {'message': 'OTP Sent!'}
 
 @app.post("/register-user")
 def register_user(req: UserRegisterRequest):
-    otp_status, otp_detail = verify_otp(req.email, req.otp, "registration") 
-    if otp_status == '400':
-        raise HTTPException(status_code=otp_status, detail=otp_detail)
+    otp_result = verify_otp(req.email, req.otp, "registration") 
+    if otp_result['status'] != 200:
+        raise HTTPException(status_code=otp_result['status'], detail=otp_result['detail'])
 
     result = create_user(
         req.first_name, req.last_name,
@@ -78,22 +92,9 @@ def register_user(req: UserRegisterRequest):
 
 @app.post("/register-org")
 def register_org(req: OrgRegisterRequest):
-    conn = get_db_connection()
-    c = conn.cursor()
-
-    c.execute("""SELECT otp, created_at FROM otps WHERE email = ? ORDER BY created_at DESC LIMIT 1""", (req.email,))
-    otp_row = c.fetchone()
-
-    if not otp_row:
-        raise HTTPException(status_code=400, detail = "OTP not found!")
-    
-    otp, created_at = otp_row["otp"], otp_row["created_at"]
-
-    if otp != req.otp:
-        raise HTTPException(status_code = 400, detail = "Invalid OTP!")
-    
-    if datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S") < datetime.utcnow() - timedelta(minutes=5):
-        raise HTTPException(status_code = 400, detail = "OTP expired!")
+    otp_result = verify_otp(req.email, req.otp, "registration") 
+    if otp_result['status'] != 200:
+        raise HTTPException(status_code=otp_result['status'], detail=otp_result['detail'])
     
     result = create_organization(
         req.name, req.phone_no, req.email, req.password
@@ -102,16 +103,6 @@ def register_org(req: OrgRegisterRequest):
         return {"message": "Organization registered", "account_id": result["account_id"]}
     else:
         raise HTTPException(status_code=400, detail=result["error"])
-
-@app.post("/set-mpin")
-def set_mpin(req: SetMPin):
-    conn = get_db_connection()
-    c = conn.cursor()
-
-    acc = get_account_by_email(req.email)
-
-    if acc['type'] == "user":
-        c.execute("""SELECT """)
 
 @app.post("/login")
 def login(req: LoginRequest):
@@ -133,6 +124,38 @@ def login(req: LoginRequest):
         "email": account["data"]["email"],
         "phone_no": account["data"]["phone_no"]
     }
+
+@app.post("/request-setmpin-otp")
+def request_setmpin_otp(req: SetMPINOTPRequest):
+    conn = get_db_connection()
+    c = conn.cursor()
+    otp = generate_otp()
+    c.execute("""INSERT INTO otps (type, email, otp) VALUES ('setmpin', ?, ?)""", (req.email, otp))
+    conn.commit()
+    conn.close()
+    send_otp_email(req.email, otp, "setmpin")
+    return {'message': 'OTP Sent!'}
+
+@app.post("/set-mpin")
+def set_mpin(req: SetMPin):
+    otp_result = verify_otp(req.email, req.otp, "setmpin") 
+    if otp_result['status'] != 200:
+        raise HTTPException(status_code=otp_result['status'], detail=otp_result['detail'])
+    
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    acc = get_account_by_email(req.email)
+
+    if acc['type'] == "user":
+        c.execute("""UPDATE users SET mpin = ? WHERE email = ?""", (req.mpin, req.email))
+    else:
+        c.execute("""UPDATE organizations SET mpin = ? WHERE email = ?""", (req.mpin, req.email))
+    
+    conn.commit()
+    conn.close()
+    
+    return {'status':200, 'detail': 'Successfully set mpin!'}
 
 @app.post("/transfer")
 def send_money_route(req: SendMoneyRequest):
