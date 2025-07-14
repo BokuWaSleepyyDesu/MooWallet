@@ -74,8 +74,49 @@ def verify_otp(sender, otp, type):
     
     return{'status': 200, 'detail': 'OTP matches!'}
 
+def send_email(mail_to, mail_subject, mail_content):
+    try:
+        mail= MIMEText(f"{mail_content}", "plain", "utf-8")
+        mail['Subject'] = mail_subject
+        mail['From'] = login[0]
+        mail['To'] = mail_to
+
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login(login[0], login[1])
+            server.sendmail(mail['From'], [mail['To']], mail.as_string())
+
+        return {"status": 200, "detail" : "Mail successfully sent!"}
+    except Exception as e:
+        return {"status" : 400, "detail" : str(e)}
+
 def verify_mpin(id, mpin):
-    pass
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT type, user_no, org_no FROM accounts WHERE account_id = ?", (id,))
+        acc = c.fetchone()
+        if not acc:
+            conn.close()
+            return {"status": "failed", "error": "Sender not found"}
+
+        if acc["type"] == "user":
+            c.execute("SELECT mpin FROM users WHERE user_no = ?", (acc["user_no"],))
+        else:
+            c.execute("SELECT mpin FROM organizations WHERE org_no = ?", (acc["org_no"],))
+        db_mpin = c.fetchone()
+        print(db_mpin["mpin"])
+        if db_mpin["mpin"] != mpin:
+            conn.close()
+            return {"status" : 400, "detail" : "Invalid MPIN!"}
+
+        else:
+            conn.close()
+            return {"status" : 200, "detail" : "MPIN matches!"}
+    except Exception as e:
+        conn.close()
+        return {"status" : "failed", "detail" : str(e)}
+
 
 def send_transaction_email(sender_id, receiver_id, amount):
     conn = get_db_connection()

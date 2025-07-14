@@ -38,6 +38,31 @@ def create_organization(name, phone_no, email, password):
     finally:
         conn.close()
 
+def get_email_by_account_id(account_id):
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    c.execute("""
+        SELECT 
+            CASE 
+                WHEN a.type = 'user' THEN u.email
+                WHEN a.type = 'organization' THEN o.email
+            END AS email
+        FROM accounts a
+        LEFT JOIN users u ON a.user_no = u.user_no
+        LEFT JOIN organizations o ON a.org_no = o.org_no
+        WHERE a.account_id = ?
+    """, (account_id,))
+
+    result = c.fetchone()
+    conn.close()
+
+    if result and result['email']:
+        return result['email']
+    else:
+        return None
+
+
 def get_account_by_email(email):
     conn = get_db_connection()
     c = conn.cursor()

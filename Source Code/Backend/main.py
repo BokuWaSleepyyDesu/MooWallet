@@ -2,17 +2,20 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from database import create_tables, get_db_connection
 from crud import (
-    create_user, create_organization,
+    create_user, create_organization, get_email_by_account_id,
     get_account_by_email, get_account_by_phoneno,
     transfer, get_transactions_by_account
 )
-from utils import generate_otp, send_otp_email, verify_otp, verify_password, verify_mpin
+from utils import hash_password, generate_otp, send_otp_email, send_email, verify_otp, verify_password, verify_mpin
 from datetime import datetime, timedelta
 
 app = FastAPI()
 create_tables()
 
 # --------------- Models -------------------
+
+class RegistrationOTPRequest(BaseModel):
+    email: str
 
 class UserRegisterRequest(BaseModel):
     first_name: str
@@ -33,6 +36,17 @@ class LoginRequest(BaseModel):
     identifier: str
     password: str
 
+class SetMPin(BaseModel):
+    id: int
+    mpin: str
+    otp: str
+
+class SetMPINOTPRequest(BaseModel):
+    id: int
+
+class TransactionOTPRequest(BaseModel):
+    id: int
+
 class SendMoneyRequest(BaseModel):
     sender_id: int
     receiver_id: int
@@ -41,25 +55,12 @@ class SendMoneyRequest(BaseModel):
     otp: str | None = None
     method: str
 
-class SetMPin(BaseModel):
-    email: str
-    mpin: str
-    otp: str
-
-class RegistrationOTPRequest(BaseModel):
-    email: str
-
-class SetMPINOTPRequest(BaseModel):
-    email: str
-
-class TransactionOTPRequest(BaseModel):
-    email: str
-
 class PasswordRecoveryOTPRequest(BaseModel):
-    email: str
+    id: int
 
 class PasswordRecovery(BaseModel):
-    email: str
+    id: int
+    otp: str
     password: str
 
 # --------------- Routes -------------------
@@ -112,7 +113,7 @@ def login(req: LoginRequest):
         account = get_account_by_phoneno(req.identifier)
 
     if not account:
-        raise HTTPException(status_code=404, detail="Account not found")
+        raise HTTPException(status_code=404, detail="Account not found!")
 
     if not verify_password(req.password, account["data"]["password"]):
         raise HTTPException(status_code=401, detail="Invalid password")
@@ -127,45 +128,63 @@ def login(req: LoginRequest):
 
 @app.post("/request-setmpin-otp")
 def request_setmpin_otp(req: SetMPINOTPRequest):
+    user_email = get_email_by_account_id(req.id)
     conn = get_db_connection()
     c = conn.cursor()
     otp = generate_otp()
-    c.execute("""INSERT INTO otps (type, email, otp) VALUES ('setmpin', ?, ?)""", (req.email, otp))
+    c.execute("""INSERT INTO otps (type, email, otp) VALUES ('setmpin', ?, ?)""", (user_email, otp))
     conn.commit()
     conn.close()
-    send_otp_email(req.email, otp, "setmpin")
+    send_otp_email(user_email, otp, "setmpin")
     return {'message': 'OTP Sent!'}
 
 @app.post("/set-mpin")
 def set_mpin(req: SetMPin):
-    otp_result = verify_otp(req.email, req.otp, "setmpin") 
+    user_email = get_email_by_account_id(req.id)
+    otp_result = verify_otp(user_email, req.otp, "setmpin") 
     if otp_result['status'] != 200:
         raise HTTPException(status_code=otp_result['status'], detail=otp_result['detail'])
     
     conn = get_db_connection()
     c = conn.cursor()
 
-    acc = get_account_by_email(req.email)
+    email = get_email_by_account_id(req.id)
+    acc = get_account_by_email(email)
 
     if acc['type'] == "user":
-        c.execute("""UPDATE users SET mpin = ? WHERE email = ?""", (req.mpin, req.email))
+        c.execute("""UPDATE users SET mpin = ? WHERE email = ?""", (req.mpin, email))
     else:
-        c.execute("""UPDATE organizations SET mpin = ? WHERE email = ?""", (req.mpin, req.email))
+        c.execute("""UPDATE organizations SET mpin = ? WHERE email = ?""", (req.mpin, email))
     
     conn.commit()
     conn.close()
     
     return {'status':200, 'detail': 'Successfully set mpin!'}
 
+@app.post("/request-transaction-otp")
+def request_transaction_otp(req: TransactionOTPRequest):
+    user_email = get_email_by_account_id(req.id)
+    conn = get_db_connection()
+    c = conn.cursor()
+    otp = generate_otp()
+    c.execute("""INSERT INTO otps (type, email, otp) VALUES ('transaction',?,?)""", (user_email, otp))
+    conn.commit()
+    conn.close()
+    send_otp_email(user_email, otp, "transaction")
+    return {'message': 'OTP Sent!'}
+
 @app.post("/transfer")
 def send_money_route(req: SendMoneyRequest):
+    sender_email = get_email_by_account_id(req.sender_id)
     if req.method == 'mpin':
-        if not verify_mpin(req.sender_id, req.mpin):
+        mpin_result = verify_mpin(req.sender_id, req.mpin)
+        if mpin_result['status'] != 200:
             raise HTTPException(status_code=401, detail="Invalid MPIN")
     
     elif req.method == 'otp':
-        if not verify_otp(req.sender_id, req.otp, "transaction"):
-            raise HTTPException(status_code=401, detail="Invalid or expired OTP!")
+        otp_result = verify_otp(sender_email, req.otp, "transaction")
+        if otp_result['status'] != 200:
+            raise HTTPException(status_code=otp_result['status'], detail=otp_result['detail'])
     
     elif req.method == 'fingerprint':
         pass
@@ -178,6 +197,60 @@ def send_money_route(req: SendMoneyRequest):
         return {"message": "Transaction successful"}
     else:
         raise HTTPException(status_code=400, detail=result["error"])
+
+@app.post("/request-password-recovery-otp")
+def request_transaction_otp(req: PasswordRecoveryOTPRequest):
+    user_email = get_email_by_account_id(req.id)
+    conn = get_db_connection()
+    c = conn.cursor()
+    otp = generate_otp()
+    c.execute("""INSERT INTO otps (type, email, otp) VALUES ('recovery',?,?)""", (user_email, otp))
+    conn.commit()
+    conn.close()
+    send_otp_email(user_email, otp, "recovery")
+    return {'status_code': 200, 'message': 'OTP Sent!'}
+
+@app.post("/password-recovery")
+def password_recover(req: PasswordRecovery):
+    user_email = get_email_by_account_id(req.id)
+
+    otp_result = verify_otp(user_email, req.otp, "recovery")  # use "recovery", not "transaction"
+    if otp_result['status'] != 200:
+        raise HTTPException(status_code=otp_result['status'], detail=otp_result['detail'])
+    
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    c.execute("SELECT type, user_no, org_no FROM accounts WHERE account_id = ?", (req.id,))
+    row = c.fetchone()
+    
+    if row:
+        hashed_pw = hash_password(req.password)
+
+        if row["type"] == 'user':
+            c.execute("SELECT first_name FROM users WHERE user_no = ?", (row["user_no"],))
+            user_row = c.fetchone()
+            user_name = user_row["first_name"] if user_row else "User"
+            
+            c.execute("UPDATE users SET password = ? WHERE email = ?", (hashed_pw, user_email))
+        else:
+            c.execute("SELECT name FROM organizations WHERE org_no = ?", (row["org_no"],))
+            org_row = c.fetchone()
+            user_name = org_row["name"] if org_row else "Organization"
+            
+            c.execute("UPDATE organizations SET password = ? WHERE email = ?", (hashed_pw, user_email))
+
+        conn.commit()
+        conn.close()
+
+        mail_subject = "Password Changed Successfully!"
+        mail_content = f"Dear {user_name}, your password has been successfully recovered!"
+        send_email(user_email, mail_subject, mail_content)
+
+        return {"message": "Password reset successful"}
+    else:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Account not found!")
 
 @app.get("/transactions/{account_id}")
 def get_txns(account_id: int):
