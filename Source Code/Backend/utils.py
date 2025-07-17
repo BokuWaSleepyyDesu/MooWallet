@@ -105,7 +105,6 @@ def verify_mpin(id, mpin):
         else:
             c.execute("SELECT mpin FROM organizations WHERE org_no = ?", (acc["org_no"],))
         db_mpin = c.fetchone()
-        print(db_mpin["mpin"])
         if db_mpin["mpin"] != mpin:
             conn.close()
             return {"status" : 400, "detail" : "Invalid MPIN!"}
