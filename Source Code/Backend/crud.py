@@ -115,13 +115,14 @@ def get_account_by_phoneno(phone_no):
 
 def transfer(sender_id, receiver_id, amount):
     conn = get_db_connection()
-    c = conn.cursor()
 
     try:
+        conn.execute("BEGIN")
+        c = conn.cursor()
         c.execute("SELECT type, user_no, org_no FROM accounts WHERE account_id = ?", (sender_id,))
         sender_acc = c.fetchone()
         if not sender_acc:
-            return {"status":"failed", "error":"Sender not found"}
+            raise Exception("Sender not found")
         if sender_acc["type"] == "user":
             c.execute("SELECT balance from users WHERE user_no = ?", (sender_acc["user_no"],))
         else:
@@ -129,12 +130,12 @@ def transfer(sender_id, receiver_id, amount):
         sender_balance = c.fetchone()["balance"]
 
         if sender_balance < amount:
-            return {"status":"failed","error":"Insufficient balance"}
+            raise Exception("Insufficient Balance")
         
         c.execute("SELECT type, user_no, org_no FROM accounts WHERE account_id = ?", (receiver_id,))
         receiver_acc = c.fetchone()
         if not receiver_acc:
-            return {"status":"failed", "error":"Receiver not found"}
+            raise Exception("Receiver not found")
         
         if sender_acc["type"] == "user":
             c.execute("UPDATE users SET balance = balance - ? WHERE user_no = ?", (amount, sender_acc["user_no"]))
@@ -153,6 +154,7 @@ def transfer(sender_id, receiver_id, amount):
         send_transaction_email(sender_id, receiver_id, str(amount))
         return {"status":"success"}
     except Exception as e:
+        conn.rollback()
         return {"status":"failed", "error": str(e)}
     finally:
         conn.close()
