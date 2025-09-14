@@ -9,8 +9,19 @@ from crud import (
 from utils import hash_password, generate_otp, send_otp_email, send_email, verify_otp, verify_password, verify_mpin
 from datetime import datetime, timedelta
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
 create_tables()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or ["http://localhost:5173"]
+    allow_credentials=True,
+    allow_methods=["*"],  # allow POST, GET, OPTIONS, etc.
+    allow_headers=["*"],
+)
+
 
 # --------------- Models -------------------
 
