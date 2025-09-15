@@ -133,9 +133,12 @@ def login(req: LoginRequest):
     if not verify_password(req.password, account["data"]["password"]):
         raise HTTPException(status_code=401, detail="Invalid password")
 
+    full_name = f"{account['data'].get('first_name', '')} {account['data'].get('last_name', '')}".strip()
+
     return {
         "message": "Login successful",
         "account_id": account["account_id"],
+        "name": full_name,
         "type": account["type"],
         "email": account["data"]["email"],
         "phone_no": account["data"]["phone_no"]

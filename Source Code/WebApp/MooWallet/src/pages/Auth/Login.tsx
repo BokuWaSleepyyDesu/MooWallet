@@ -1,11 +1,17 @@
 import React, { useState } from "react";
 import type { AuthView } from "./AuthPage";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function Login({ switchView }: { switchView: (v: AuthView) => void }) {
   const[identifier, setIdentifier] = useState("");
   const[password, setPassword] = useState("");
   const[error, setError] = useState("");
+
+  const navigate = useNavigate();
+  const { setUser } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,15 +36,23 @@ export default function Login({ switchView }: { switchView: (v: AuthView) => voi
       }),
     });
 
-     const data = await response.json();
+    const data = await response.json();
 
     if (!response.ok) {
       setError(data.detail || "Invalid email or password");
       return;
     }
+    // console.log(data);
+    localStorage.setItem("user", JSON.stringify(data));
+    setUser({
+      id: data.account_id,
+      name: data.name,
+      email: data.email,
+      type: data.type,
+      phoneNo: data.phone_no,
+    });
+    navigate("/dashboard");
 
-    console.log("Login success:", data);
-    // redirect to dashboard
     } catch (err) {
       setError("Something went wrong. Please try again.");
     }
