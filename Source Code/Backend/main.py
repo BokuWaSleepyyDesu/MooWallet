@@ -7,7 +7,7 @@ from crud import (
     transfer, get_transactions_by_account
 )
 from utils import hash_password, generate_otp, send_otp_email, send_email, verify_otp, verify_password, verify_mpin
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -32,6 +32,7 @@ class UserRegisterRequest(BaseModel):
     first_name: str
     last_name: str
     phone_no: str
+    dob: date
     email: str
     password: str
     otp: str
@@ -67,10 +68,10 @@ class SendMoneyRequest(BaseModel):
     method: str
 
 class PasswordRecoveryOTPRequest(BaseModel):
-    id: int
+    identifier: str
 
 class PasswordRecovery(BaseModel):
-    id: int
+    identifier: str
     otp: str
     password: str
 
@@ -95,9 +96,12 @@ def register_user(req: UserRegisterRequest):
 
     result = create_user(
         req.first_name, req.last_name,
-        req.phone_no, req.email, req.password
+        req.phone_no, req.email, req.password, req.dob
     )
     if result["status"] == "success":
+        mail_subject = "Signed Up Successfully!"
+        mail_content = f"Dear {req.first_name}, your account has been created!"
+        send_email(req.email, mail_subject, mail_content)
         return {"message": "User registered", "account_id": result["account_id"]}
     else:
         raise HTTPException(status_code=400, detail=result["error"])
@@ -211,7 +215,15 @@ def send_money_route(req: SendMoneyRequest):
 
 @app.post("/request-password-recovery-otp")
 def request_transaction_otp(req: PasswordRecoveryOTPRequest):
-    user_email = get_email_by_account_id(req.id)
+    account = get_account_by_email(req.identifier)
+
+    if not account:
+        account = get_account_by_phoneno(req.identifier)
+
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found!")
+    
+    user_email = get_email_by_account_id(account["account_id"])
     conn = get_db_connection()
     c = conn.cursor()
     otp = generate_otp()
@@ -223,7 +235,15 @@ def request_transaction_otp(req: PasswordRecoveryOTPRequest):
 
 @app.post("/password-recovery")
 def password_recover(req: PasswordRecovery):
-    user_email = get_email_by_account_id(req.id)
+    account = get_account_by_email(req.identifier)
+
+    if not account:
+        account = get_account_by_phoneno(req.identifier)
+
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found!")
+    
+    user_email = get_email_by_account_id(account["account_id"])
 
     otp_result = verify_otp(user_email, req.otp, "recovery")  # use "recovery", not "transaction"
     if otp_result['status'] != 200:
@@ -232,7 +252,7 @@ def password_recover(req: PasswordRecovery):
     conn = get_db_connection()
     c = conn.cursor()
     
-    c.execute("SELECT type, user_no, org_no FROM accounts WHERE account_id = ?", (req.id,))
+    c.execute("SELECT type, user_no, org_no FROM accounts WHERE account_id = ?", (account["account_id"],))
     row = c.fetchone()
     
     if row:

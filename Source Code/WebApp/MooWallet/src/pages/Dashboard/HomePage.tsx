@@ -3,7 +3,7 @@ import { Outlet, NavLink } from "react-router-dom";
 // import Header from "../../components/Header";
 // import Sidebar from "../../components/Sidebar";
 
-export default function DashboardLayout() {
+export default function HomeLayout() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* <Header /> */}

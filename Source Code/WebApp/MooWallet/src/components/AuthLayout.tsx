@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: {children: ReactNode }) {
                     <img className="w-full h-full object-cover object-center" src="/images/Cow.png" alt="Cow" />
                 </div>
                 <div className="flex-1 p-8 md:p-12 flex flex-col relative">
-                    <h1 className="absolute top-[10.92%] left-[7.1%] text-left font-normal text-[#4b4b4b] text-6xl">MooWallet</h1>
+                    <h1 className="absolute top-[5%] left-[7.1%] text-left font-normal text-[#4b4b4b] text-6xl">MooWallet</h1>
 
                     <div className="flex-1 flex items-center justify-center">
                         {children}

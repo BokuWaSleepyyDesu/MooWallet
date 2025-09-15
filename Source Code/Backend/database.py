@@ -31,6 +31,7 @@ def create_tables():
             password TEXT NOT NULL,
             balance REAL DEFAULT 0.0,
             mpin TEXT,
+            dob DATETIME,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );""")
 

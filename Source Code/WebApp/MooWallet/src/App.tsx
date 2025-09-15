@@ -1,6 +1,6 @@
 import {BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import AuthPage from "./pages/Auth/AuthPage";
-import DashboardLayout from "./pages/Dashboard/DashboardLayout";
+import HomePage from "./pages/Dashboard/HomePage";
 // import Home from "./pages/Dashboard/Home";
 // import Services from "./pages/Dashboard/Services";
 // import Wallet from "./pages/Dashboard/Wallet";
@@ -15,7 +15,7 @@ function App() {
                 <Route path = "/auth/*" element = {<AuthPage />} />
 
                 {/* Dashboard pages */}
-                <Route path = "/dashboard/*" element = {<DashboardLayout />} >
+                <Route path = "/dashboard/*" element = {<HomePage />} >
                     {/* <Route index element = {<Home />} />
                     <Route path = "services" element = {<Services />} />
                     <Route path = "wallet" element = {<Wallet />} />

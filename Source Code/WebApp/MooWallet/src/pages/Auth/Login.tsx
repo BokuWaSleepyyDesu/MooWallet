@@ -42,8 +42,6 @@ export default function Login({ switchView }: { switchView: (v: AuthView) => voi
     } catch (err) {
       setError("Something went wrong. Please try again.");
     }
-    
-    console.log("Logging in with:", { identifier, password });
   };
 
   return (
@@ -53,14 +51,14 @@ export default function Login({ switchView }: { switchView: (v: AuthView) => voi
         <div className="flex items-center justify-center">
           <img className="w-[6.18%] h-[3.92%]" src="/images/mail_icon.png" alt="mail_icon" />
           <div className="ml-[3.5%]">
-            <input type="email" placeholder="Email or Phone Number" value={identifier} onChange={(e) => setIdentifier(e.target.value)} className="ml-[2%] w-full border-0 focus:outline-none transparent text-[#1c1c1c] cursor-pointer text-[0.9rem]" />
+            <input type="text" placeholder="Email or Phone Number" value={identifier} onChange={(e) => setIdentifier(e.target.value)} className="ml-[2%] w-full border-0 focus:outline-none transparent text-[#1c1c1c] cursor-text text-[0.9rem]" />
             <svg className="block mt-[2%]" width="100%" height="1" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="1" x2="100%" y2="1" stroke="#4b4b4b" stroke-width="1" /></svg>
           </div>
         </div>
         <div className="flex items-center justify-center mt-[5%]">
           <img className="w-[6.18%] h-[3.92%]" src="/images/password_icon.png" alt="mail_icon" />
           <div className="ml-[3.5%]">
-            <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="ml-[2%] w-full border-0 focus:outline-none transparent text-[#1c1c1c] cursor-pointer text-[0.9rem]" />
+            <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className="ml-[2%] w-full border-0 focus:outline-none transparent text-[#1c1c1c] cursor-text text-[0.9rem]" />
             <svg className="block mt-[2%]" width="100%" height="1" xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="1" x2="100%" y2="1" stroke="#4b4b4b" stroke-width="1" /></svg>
           </div>
         </div>

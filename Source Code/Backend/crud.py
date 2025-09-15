@@ -1,13 +1,13 @@
 from database import get_db_connection
 from utils import hash_password, verify_password, send_transaction_email
 
-def create_user(first_name, last_name, phone_no, email, password):
+def create_user(first_name, last_name, phone_no, email, password, dob):
     conn = get_db_connection()
     c = conn.cursor()
 
     try:
-        c.execute("""INSERT INTO users (first_name, last_name, phone_no, email, password) VALUES (?,?,?,?,?)""", 
-                  (first_name, last_name, phone_no, email, hash_password(password)))
+        c.execute("""INSERT INTO users (first_name, last_name, phone_no, email, password, dob) VALUES (?,?,?,?,?,?)""", 
+                  (first_name, last_name, phone_no, email, hash_password(password), dob))
         user_id = c.lastrowid
 
         c.execute("""INSERT INTO accounts (type, user_no) VALUES ('user', ?)""",
