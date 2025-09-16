@@ -14,7 +14,7 @@ export default function HomeLayout() {
   return (
     <div className="flex flex-col h-screen">
       <Header />
-      <div className="flex flex-1 gap-[5%] p-4 overflow-hidden mt-[2%]">
+      <div className="flex flex-1 gap-[2%] p-4 overflow-hidden mt-[2%]">
         <ServiceSidebar />
         <Home />
         <BalanceSidebar />
