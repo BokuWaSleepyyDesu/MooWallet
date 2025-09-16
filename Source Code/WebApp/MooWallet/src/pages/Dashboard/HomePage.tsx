@@ -1,8 +1,9 @@
 import { Navigate } from "react-router-dom";
-import { Outlet, NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Header from "../../components/Header";
-// import Sidebar from "../../components/Sidebar";
+import ServiceSidebar from "../../components/ServiceSidebar";
+import Home from "./Home";
+import BalanceSidebar from "../../components/BalanceSidebar";
 
 export default function HomeLayout() {
   const { user } = useAuth();
@@ -11,13 +12,12 @@ export default function HomeLayout() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex flex-col h-screen">
       <Header />
-      <div className="flex flex-1">
-        {/* <Sidebar /> */}
-        <main className="flex-1 p-6 bg-gray-50">
-          <Outlet />
-        </main>
+      <div className="flex flex-1 gap-[5%] p-4 overflow-hidden mt-[2%]">
+        <ServiceSidebar />
+        <Home />
+        <BalanceSidebar />
       </div>
     </div>
   );
