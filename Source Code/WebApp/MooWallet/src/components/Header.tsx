@@ -21,7 +21,7 @@ export default function Header() {
                     </div>
                 </div>
                 {dropdownState && (
-                <div className="fixed right-[6.5%] w-[7%] border border-[#c3c3c3] justify-center items-center">
+                <div className="fixed right-[6.5%] w-[7%] bg-[#ffffff] border border-[#c3c3c3] justify-center items-center">
                     <div className="flex">
                         <button onClick={() => console.log("Logout clicked")} className="flex-1 m-[.5rem] text-center py-[.4rem] text-[#000000] border-0 bg-transparent hover:bg-[#f2f2f2]">My Profile</button>
                     </div>
