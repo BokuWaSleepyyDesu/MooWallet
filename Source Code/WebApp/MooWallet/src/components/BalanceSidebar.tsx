@@ -5,7 +5,9 @@ export default function BalanceSidebar() {
             <div className="bg-[#a3b79a] pl-[10%] py-[5%] text-[#ffffff]">
                 <h3 className="">Total Balance:</h3>
                 <div className="flex mt-[-3%]">
-                    <p className="mt-[0%] text-[1.5rem] font-[500]">Rs.</p>
+                    <p className="mt-[0%] text-[1.5rem] font-[500]">Rs.&nbsp;</p>
+                    <p className="mt-[0%] text-[1.5rem] font-[500] truncate">XXXXXX</p>
+                    <button className="ml-[5%] w-[13%] h-[13%] bg-transparent border-none cursor-pointer"><img className="w-[100%] h-[100%]" src="/images/hiddenBalanceIcon.svg" /></button>
                 </div>
                 <button className="group flex w-[50%] mt-[-3%] px-[3%] bg-transparent border border-[#ffffff] rounded-[15px] justify-center items-center hover:bg-[#ffffff] [--icon-text-color:#ffffff] hover:[--icon-text-color:#000000]">
                     <div className="w-[22.5%]">
@@ -18,20 +20,20 @@ export default function BalanceSidebar() {
                 <p className="text-[#4b4b4b] text-[.85rem] font-[500]">BALANCE</p>
                 <div className="flex max-w-[40%] items-center overflow-hidden truncate px-2">
                     <p className="text-[#4b4b4b] text-[.85rem] font-[500]">Rs.&nbsp;</p>
-                    <p className="text-[#4b4b4b] text-[.85rem] font-[500] truncate">0</p>
+                    <p className="text-[#4b4b4b] text-[.85rem] font-[500] truncate">XXXX</p>
                 </div>
             </div>
             <div className="flex bg-[#b9ced1] py-[2.5%] px-[5%] justify-between">
                 <p className="text-[#4b4b4b] text-[.85rem] font-[500]">BONUS BALANCE</p>
                 <div className="flex max-w-[40%] items-center overflow-hidden truncate px-2">
                     <p className="text-[#4b4b4b] text-[.85rem] font-[500]">Rs.&nbsp;</p>
-                    <p className="text-[#4b4b4b] text-[.85rem] font-[500] truncate">0</p>
+                    <p className="text-[#4b4b4b] text-[.85rem] font-[500] truncate">XXXX</p>
                 </div>
             </div>
             <div className="flex bg-[#e4ddc9] pt-[2.5%] pb-[3%] px-[5%] justify-between">
                 <p className="text-[#4b4b4b] text-[.85rem] font-[500]">MOO POINTS</p>
                 <div className="flex max-w-[40%] items-center overflow-hidden truncate px-2 gap-[2.5px]">
-                    <p className="text-[#4b4b4b] text-[.85rem] font-[500] truncate">0</p>
+                    <p className="text-[#4b4b4b] text-[.85rem] font-[500] truncate">XXXX</p>
                     <p className="text-[#4b4b4b] text-[.85rem] font-[500]">MP</p>
                 </div>
             </div>
