@@ -43,14 +43,17 @@ export default function Login({ switchView }: { switchView: (v: AuthView) => voi
       return;
     }
     // console.log(data);
-    localStorage.setItem("user", JSON.stringify(data));
-    setUser({
-      id: data.account_id,
+    const tokenData = {
+      account_id: data.account_id,
       name: data.name,
       email: data.email,
-      type: data.type,
-      phoneNo: data.phone_no,
-    });
+      phone_no: data.phone_no,
+    };
+
+    localStorage.setItem("token", JSON.stringify(tokenData));
+
+    setUser(tokenData);
+
     navigate("/dashboard");
 
     } catch (err) {

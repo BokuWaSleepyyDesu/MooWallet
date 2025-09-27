@@ -17,7 +17,7 @@ export default function Header() {
                     <img src="" />
                     <div className="block justify-center items-center">
                         <p className="text-[#4c4c4c] text-center font-[700]">{user?.name || "Full Name"}</p>
-                        <p className="mt-[-10%] text-[#4c4c4c] text-center">{user?.phoneNo || "Phone Number"}</p>
+                        <p className="mt-[-10%] text-[#4c4c4c] text-center">{user?.phone_no || "Phone Number"}</p>
                     </div>
                 </div>
                 {dropdownState && (

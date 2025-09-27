@@ -1,68 +1,45 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
 type User = {
-  id: number;         // maps account_id
-  email: string;
+  account_id: string;
   name: string;
-  type: string;
-  phoneNo: string;    // maps phone_no
+  email: string;
+  phone_no: string;
 };
 
 type AuthContextType = {
   user: User | null;
   setUser: (user: User | null) => void;
   logout: () => void;
+  loading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      // fetch real user info
-      fetchUser(token);
-    }
-  }, []);
-
-  async function fetchUser(token: string) {
-    try {
-      const response = await fetch("https://your-api.com/user", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch user");
+    const stored = localStorage.getItem("token");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setUser(parsed);
+      } catch {
+        localStorage.removeItem("token");
       }
-
-      const data = await response.json();
-
-      // Map API response to User type
-      setUser({
-        id: data.account_id,
-        email: data.email,
-        name: data.name,
-        type: data.type,
-        phoneNo: data.phone_no,
-      });
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      setUser(null);
     }
-  }
+    setLoading(false);
+  }, []);
 
   function logout() {
     localStorage.removeItem("token");
-    localStorage.removeItem("user");
     setUser(null);
   }
 
   return (
-    <AuthContext.Provider value={{ user, setUser, logout }}>
+    <AuthContext.Provider value={{ user, setUser, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
